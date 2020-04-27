@@ -173,7 +173,9 @@ def margin_query(model, device, data_loader, query_size=10):
             margins.extend(torch.abs(differences).cpu().tolist())
             indices.extend(idx.tolist())
 
+    # maybe rename to confidence
     conf = np.asarray(margins)
+    # maybe rename to indice
     ind = np.asarray(indices)
     confind = np.column_stack((conf, ind)) 
     confind = np.sort(confind, axis=1)
@@ -262,6 +264,7 @@ def test(model, device, test_loader, criterion):
     model.eval()
     
     test_loss = 0
+    # maybe rename to correct_count` or `n_correct`
     correct = 0
     
     one = torch.ones(1, 1).to(device)
@@ -274,6 +277,7 @@ def test(model, device, test_loader, criterion):
             data, target = data.to(device), target.to(device)
             output = model(data)
             test_loss += criterion(output.squeeze(), target.squeeze()).item()  # sum up batch loss
+            # what is `pred` ? prediction ?
             pred = output.argmax(dim=1, keepdim=True)
             torch.where(output.squeeze()<0.5, zero, one)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -291,6 +295,8 @@ torch.manual_seed(999)
 
 device = torch.device("cuda")
 
+# maybe rename to labeledset: below we have 'labeled_loader'
+# or `trainset`: below we have 'Train set size:'
 dataset = IndexedDataset(datadir, transform=transforms.Compose([transforms.Resize((224, 224)), 
                                                                 transforms.ToTensor()]))
 testset = IndexedDataset(testdir, transform=transforms.Compose([transforms.Resize((224, 224)), 
@@ -325,6 +331,7 @@ batch_size = 128
 labeled_idx = np.where(dataset.unlabeled_mask == 0)[0]
 labeled_loader = DataLoader(dataset, batch_size=batch_size, num_workers=10, 
                             sampler=SubsetRandomSampler(labeled_idx))
+# What is `10` here ? Is it related to `num_queries`, or `n_classes` ? 
 train_loss = 10*max_loss
 while train_loss > max_loss:
     train_loss = train(classifier, device, labeled_loader, optimizer, criterion)
@@ -340,6 +347,7 @@ for query in range(num_queries):
     labeled_idx = np.where(dataset.unlabeled_mask == 0)[0]
     labeled_loader = DataLoader(dataset, batch_size=batch_size, num_workers=10, 
                                 sampler=SubsetRandomSampler(labeled_idx))
+    # What `10` here ? Is it related to `num_queries`, or `n_classes` ? 
     train_loss = 10*max_loss
     while train_loss > max_loss:
         train_loss = train(classifier, device, labeled_loader, optimizer, criterion)
